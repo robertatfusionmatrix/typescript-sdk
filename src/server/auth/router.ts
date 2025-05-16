@@ -5,7 +5,7 @@ import { authorizationHandler, AuthorizationHandlerOptions } from "./handlers/au
 import { revocationHandler, RevocationHandlerOptions } from "./handlers/revoke.js";
 import { metadataHandler } from "./handlers/metadata.js";
 import { OAuthServerProvider } from "./provider.js";
-import { OAuthProtectedResourceMetadata } from "../../shared/auth.js";
+import { OAuthMetadata, OAuthProtectedResourceMetadata } from "../../shared/auth.js";
 
 export type AuthRouterOptions = {
   /**
@@ -30,12 +30,17 @@ export type AuthRouterOptions = {
    */
   serviceDocumentationUrl?: URL;
 
+  /**
+   * An optional list of scopes supported by this authorization server
+   */
+  scopesSupported?: string[];
+
   // Individual options per route
   authorizationOptions?: Omit<AuthorizationHandlerOptions, "provider">;
   clientRegistrationOptions?: Omit<ClientRegistrationHandlerOptions, "clientsStore">;
   revocationOptions?: Omit<RevocationHandlerOptions, "provider">;
   tokenOptions?: Omit<TokenHandlerOptions, "provider">;
-  protectedResourceOptions?: Omit<ProtectedResourceRouterOptions, "issuerUrl" | "serviceDocumentationUrl">;
+  protectedResourceOptions?: Omit<ProtectedResourceRouterOptions, "issuerUrl" | "serviceDocumentationUrl" | "scopesSupported">;
 };
 
 const checkIssuerUrl = (issuer: URL): void => {
@@ -72,7 +77,7 @@ export function mcpAuthRouter(options: AuthRouterOptions): RequestHandler {
   const registration_endpoint = options.provider.clientsStore.registerClient ? "/register" : undefined;
   const revocation_endpoint = options.provider.revokeToken ? "/revoke" : undefined;
 
-  const metadata = {
+  const metadata: OAuthMetadata = {
     issuer: issuer.href,
     service_documentation: options.serviceDocumentationUrl?.href,
 
@@ -83,6 +88,8 @@ export function mcpAuthRouter(options: AuthRouterOptions): RequestHandler {
     token_endpoint: new URL(token_endpoint, baseUrl || issuer).href,
     token_endpoint_auth_methods_supported: ["client_secret_post"],
     grant_types_supported: ["authorization_code", "refresh_token"],
+
+    scopes_supported: options.scopesSupported,
 
     revocation_endpoint: revocation_endpoint ? new URL(revocation_endpoint, baseUrl || issuer).href : undefined,
     revocation_endpoint_auth_methods_supported: revocation_endpoint ? ["client_secret_post"] : undefined,
@@ -113,6 +120,7 @@ export function mcpAuthRouter(options: AuthRouterOptions): RequestHandler {
   router.use(mcpProtectedResourceRouter({
     issuerUrl: issuer,
     serviceDocumentationUrl: options.serviceDocumentationUrl,
+    scopesSupported: options.scopesSupported,
     ...defaultProtectedResourceOptions,
     ...options.protectedResourceOptions
   }))

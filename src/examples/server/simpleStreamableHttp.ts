@@ -182,10 +182,10 @@ if (useOAuth) {
     provider,
     issuerUrl,
     baseUrl: issuerUrl,
+    scopesSupported: ['mcp:tools'],
     protectedResourceOptions: {
       serverUrl,
       resourceName: 'MCP Demo Server',
-      scopesSupported: ['mcp:tools'],
     },
   }));
 
