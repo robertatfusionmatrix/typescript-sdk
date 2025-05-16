@@ -10,7 +10,7 @@ import { AuthInfo } from 'src/server/auth/types.js';
  * Simple in-memory implementation of OAuth clients store for demo purposes.
  * In production, this should be backed by a persistent database.
  */
-export class InMemoryClientsStore implements OAuthRegisteredClientsStore {
+export class DemoInMemoryClientsStore implements OAuthRegisteredClientsStore {
   private clients = new Map<string, OAuthClientInformationFull>();
 
   async getClient(clientId: string) {
@@ -25,10 +25,10 @@ export class InMemoryClientsStore implements OAuthRegisteredClientsStore {
 
 /**
  * Simple in-memory implementation of OAuth server provider for demo purposes.
- * In production, this should be backed by a persistent database with proper security measures.
+ * Do not use this in production.
  */
-export class InMemoryAuthProvider implements OAuthServerProvider {
-  clientsStore = new InMemoryClientsStore();
+export class DemoInMemoryAuthProvider implements OAuthServerProvider {
+  clientsStore = new DemoInMemoryClientsStore();
   private codes = new Map<string, {
     params: AuthorizationParams,
     client: OAuthClientInformationFull}>();

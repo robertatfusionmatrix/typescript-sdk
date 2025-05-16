@@ -7,7 +7,7 @@ import { mcpAuthRouter, mcpProtectedResourceRouter, getOAuthProtectedResourceMet
 import { requireBearerAuth } from '../../server/auth/middleware/bearerAuth.js';
 import { CallToolResult, GetPromptResult, isInitializeRequest, ReadResourceResult } from '../../types.js';
 import { InMemoryEventStore } from '../shared/inMemoryEventStore.js';
-import { InMemoryAuthProvider } from './inMemoryOAuthProvider.js';
+import { DemoInMemoryAuthProvider } from './demoInMemoryOAuthProvider.js';
 
 // Check for OAuth flag
 const useOAuth = process.argv.includes('--oauth');
@@ -174,7 +174,7 @@ app.use(express.json());
 // Set up OAuth if enabled
 let authMiddleware = null;
 if (useOAuth) {
-  const provider = new InMemoryAuthProvider();
+  const provider = new DemoInMemoryAuthProvider();
 
   // Create auth middleware for MCP endpoints
   const mcpServerUrl = new URL(`http://localhost:${MCP_PORT}`);
