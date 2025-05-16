@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { McpServer } from '../../server/mcp.js';
 import { StreamableHTTPServerTransport } from '../../server/streamableHttp.js';
-import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from '../../server/auth/router.js';
+import { mcpAuthRouter, mcpProtectedResourceRouter, getOAuthProtectedResourceMetadataUrl } from '../../server/auth/router.js';
 import { requireBearerAuth } from '../../server/auth/middleware/bearerAuth.js';
 import { CallToolResult, GetPromptResult, isInitializeRequest, ReadResourceResult } from '../../types.js';
 import { InMemoryEventStore } from '../shared/inMemoryEventStore.js';
@@ -165,7 +165,9 @@ const getServer = () => {
   return server;
 };
 
-const PORT = 3000;
+const MCP_PORT = 3000;
+const AUTH_PORT = 3001;
+
 const app = express();
 app.use(express.json());
 
@@ -173,27 +175,45 @@ app.use(express.json());
 let authMiddleware = null;
 if (useOAuth) {
   const provider = new InMemoryAuthProvider();
-  // Create auth middleware for MCP endpoints
-  const serverUrl = new URL(`http://localhost:${PORT}`);
-  const issuerUrl = serverUrl;
 
-  // Add OAuth routes
-  app.use(mcpAuthRouter({
+  // Create auth middleware for MCP endpoints
+  const mcpServerUrl = new URL(`http://localhost:${MCP_PORT}`);
+  const authServerUrl = new URL(`http://localhost:${AUTH_PORT}`);
+
+  // Create separate auth server app
+  const authApp = express();
+  authApp.use(express.json());
+
+  // Add OAuth routes to the auth server
+  authApp.use(mcpAuthRouter({
     provider,
-    issuerUrl,
-    baseUrl: issuerUrl,
+    issuerUrl: authServerUrl,
+    baseUrl: authServerUrl,
     scopesSupported: ['mcp:tools'],
+    // This endpoint is set up on the Authorization server, but really shouldn't be.
     protectedResourceOptions: {
-      serverUrl,
+      serverUrl: mcpServerUrl,
       resourceName: 'MCP Demo Server',
     },
   }));
 
+  // Start the auth server
+  authApp.listen(AUTH_PORT, () => {
+    console.log(`OAuth Authorization Server listening on port ${AUTH_PORT}`);
+  });
+
+  // Add protected resource metadata to the main MCP server
+  app.use(mcpProtectedResourceRouter({
+    issuerUrl: authServerUrl,
+    serverUrl: mcpServerUrl,
+    scopesSupported: ['mcp:tools'],
+    resourceName: 'MCP Demo Server',
+  }));
 
   authMiddleware = requireBearerAuth({
     provider,
     requiredScopes: ['mcp:tools'],
-    resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(serverUrl),
+    resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
   });
 }
 
@@ -341,8 +361,8 @@ if (useOAuth && authMiddleware) {
   app.delete('/mcp', mcpDeleteHandler);
 }
 
-app.listen(PORT, () => {
-  console.log(`MCP Streamable HTTP Server listening on port ${PORT} auth:${(useOAuth) ? 'enabled' : 'disabled'}`);
+app.listen(MCP_PORT, () => {
+  console.log(`MCP Streamable HTTP Server listening on port ${MCP_PORT}`);
 });
 
 // Handle server shutdown
