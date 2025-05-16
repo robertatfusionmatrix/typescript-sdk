@@ -118,7 +118,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
 
   async verifyAccessToken(token: string): Promise<AuthInfo> {
     const tokenData = this.tokens.get(token);
-    if (!tokenData || tokenData.expiresAt < Date.now() || tokenData.type === 'refresh') {
+    if (!tokenData || !tokenData.expiresAt || tokenData.expiresAt < Date.now()) {
       throw new Error('Invalid or expired token');
     }
 
