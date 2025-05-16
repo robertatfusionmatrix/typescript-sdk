@@ -32,7 +32,7 @@ export class InMemoryAuthProvider implements OAuthServerProvider {
   private codes = new Map<string, {
     params: AuthorizationParams,
     client: OAuthClientInformationFull}>();
-  private tokens = new Map<string, any>();
+  private tokens = new Map<string, AuthInfo>();
 
   async authorize(
     client: OAuthClientInformationFull,
@@ -87,12 +87,10 @@ export class InMemoryAuthProvider implements OAuthServerProvider {
     this.codes.delete(authorizationCode);
 
     // Generate access token
-    const accessToken = randomUUID();
-    const refreshToken = randomUUID();
+    const token = randomUUID();
 
     const tokenData = {
-      accessToken,
-      refreshToken,
+      token,
       clientId: client.client_id,
       scopes: codeData.params.scopes || [],
       expiresAt: Date.now() + 3600000, // 1 hour
@@ -100,10 +98,10 @@ export class InMemoryAuthProvider implements OAuthServerProvider {
     };
 
     // Store the token
-    this.tokens.set(accessToken, tokenData);
+    this.tokens.set(token, tokenData);
 
     return {
-      access_token: accessToken,
+      access_token: token,
       token_type: 'Bearer',
       expires_in: 3600,
       scope: (codeData.params.scopes || []).join(' '),

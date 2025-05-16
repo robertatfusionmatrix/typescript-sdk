@@ -170,7 +170,7 @@ const app = express();
 app.use(express.json());
 
 // Set up OAuth if enabled
-let authMiddleware: any = null;
+let authMiddleware = null;
 if (useOAuth) {
   const provider = new InMemoryAuthProvider();
   // Create auth middleware for MCP endpoints
