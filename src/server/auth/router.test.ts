@@ -253,9 +253,9 @@ describe('MCP Auth Router', () => {
       const options: AuthRouterOptions = {
         provider: mockProvider,
         issuerUrl: new URL('https://auth.example.com'),
+        scopesSupported: ['read', 'write'],
         protectedResourceOptions: {
           serverUrl: new URL('https://api.example.com'),
-          scopesSupported: ['read', 'write'],
           resourceName: 'Test API'
         }
       };
